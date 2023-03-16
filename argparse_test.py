@@ -1,7 +1,7 @@
-from os import walk
+from os import walk, mkdir
 from os.path import splitext, abspath, join
 from argparse import ArgumentParser
-from urllib.parse import urlparse
+from urllib.parse import urlsplit, urlunsplit
 
 def parse_files(files):
     all_lines = []
@@ -22,6 +22,26 @@ def filter_files_by_extention(files, ext):
             result.append(f)
     return result
 
+def group_urls(urls):
+    result = dict()
+    for u in urls:
+        data = urlsplit(u)
+        if data.netloc in result:
+            result[data.netloc].append(urlunsplit(data))
+        else:
+            result[data.netloc] = [urlunsplit(data)]
+    print(result.keys())
+    return result
+
+def write_grouped_urls(target_dir, urls):
+    try:
+        mkdir(join(abspath(target_dir), 'output'))
+    except OSError:
+        print(f'Cannot create {target_dir}/output')
+    for keys, values in urls.items():
+        with open(f"{join(abspath(target_dir), 'output', keys.replace('.', '_'))}.txt", 'w') as w:
+            for v in values:
+                w.write(f'{v}\n')
 
 
 if __name__ == '__main__':
@@ -40,6 +60,6 @@ if __name__ == '__main__':
                 print(i, el, sep='\t')
             abs_files = [join(abspath(args.pd), f) for f in ext_files]
             parsed_data = parse_files(abs_files)
-            for data in parsed_data:
-                print(data)
+            grouped_urls = group_urls(parsed_data)
+            write_grouped_urls(args.pd, grouped_urls)
 
